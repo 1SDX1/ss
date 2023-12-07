@@ -1,0 +1,123 @@
+import discord
+from discord.ext import commands,tasks
+import asyncio
+
+intents = discord.Intents.default()
+intents.messages = True
+intents.message_content = True  # Dodaj intencję dotyczącą treści wiadomości
+bot = commands.Bot(command_prefix='!', intents=intents)
+TOKEN = 'MTAyOTEyMzc3NzgwNTY4ODkxMg.GU57ms.0W8BSZSB_QxWSqbDLP8CvU7LBQhGOO2NTXD8Cc'
+
+muted_users = set()  # Używamy zbioru do śledzenia wyciszonych użytkowników
+allowed_user_id = 622112066165145606
+
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+@bot.command(name='wypierdol', help='how to wypierdolić chuja z serwera')
+async def kick(ctx, member: discord.Member, *, reason=None):
+    # Sprawdzenie, czy komendę używa określony użytkownik
+    if ctx.author.id == 622112066165145606:
+        await member.kick(reason=reason)
+        await ctx.send('jasne, robi się szefie ')
+    
+    await ctx.send(f'{member.mention} chuj został wypierdolony z serwera.')
+
+    try:
+        await member.send(f'Zostałeś wypierdolony z serwera. Powód: {reason}')
+    except discord.Forbidden:
+        print(f'{member.display_name} ma zablokowane wiadomości prywatne.')
+
+@bot.command(name='morda', help='Wycisz mikrofon użytkownika na kanale głosowym')
+async def mute(ctx, member: discord.Member):
+    if ctx.author.id == 622112066165145606:
+        if member.voice and member.voice.channel:
+            await member.edit(mute=True)
+            await ctx.send(f'{member.mention} chuj')
+
+@bot.command(name='odcisz', help='Odwycisz wcześniej wyciszonego użytkownika')
+async def unmute(ctx, member: discord.Member):
+    if ctx.author.id == 622112066165145606:
+        if member.voice and member.voice.channel:
+            await member.edit(mute=False)
+            await ctx.send(f'{member.mention} chuj')
+
+@bot.command(name='join', help='Dołącz do kanału głosowego')
+async def join(ctx):
+    await ctx.author.voice.channel.connect()
+
+@bot.command(name='leave', help='Opuść kanał głosowy')
+async def leave(ctx):
+    await ctx.voice_client.disconnect()
+
+@bot.command(name='play', help='Odtwórz muzykę z pliku')
+async def play(ctx, file_name):
+    if ctx.author.voice:
+        voice_channel = await ctx.author.voice.channel.connect()
+
+        try:
+            voice_channel.play(discord.FFmpegPCMAudio(file_name))
+
+            while voice_channel.is_playing():
+                await asyncio.sleep(1)
+
+        finally:
+            await voice_channel.disconnect()
+
+@bot.command(name='pause', help='Zatrzymaj odtwarzanie')
+async def pause(ctx):
+    ctx.voice_client.pause()
+
+@bot.command(name='resume', help='Wznów odtwarzanie')
+async def resume(ctx):
+    ctx.voice_client.resume()
+
+@bot.command(name='stop', help='Zatrzymaj odtwarzanie i opuść kanał')
+async def stop(ctx):
+    ctx.voice_client.stop()
+    await ctx.voice_client.disconnect()
+
+@bot.command(name='2137', help='2137')
+async def record(ctx):
+    if ctx.author.voice:
+        voice_channel = await ctx.author.voice.channel.connect()
+        voice_channel.listen(lambda audio: process_audio(audio))
+        await ctx.send(f'2137 {ctx.author.voice.channel.name}')
+    else:
+        await ctx.send('2137')
+
+@bot.command(name='2138', help='2137')
+async def stop_record(ctx):
+    if ctx.voice_client:
+        ctx.voice_client.stop_listening()
+        await ctx.voice_client.disconnect()
+        await ctx.send('2137')
+    else:
+        await ctx.send('2137')
+
+def process_audio(audio):
+    audio.export('recorded_audio.mp3', format='mp3')
+
+@bot.event
+async def on_ready():
+    print(f'Bot is ready. Logged in as {bot.user.name}')
+
+@bot.command(name='spierdalaj', help='Wyrzuć oznaczonego użytkownika z kanału głosowego')
+async def kick(ctx, member: discord.Member):
+    # Sprawdź, czy komendę używa autoryzowany użytkownik
+    if ctx.author.id == 622112066165145606:
+        # Sprawdź, czy użytkownik jest na kanale głosowym
+        if member.voice:
+            channel = member.voice.channel
+            await member.move_to(None)  # Wyrzuć użytkownika
+            await ctx.send(f'{member.mention} został wyrzucony z kanału głosowego.')
+        else:
+            await ctx.send(f'{member.mention} nie jest na kanale głosowym.')
+    else:
+        await ctx.send('spierdalaj')
+
+
+
+try:
+    bot.run(TOKEN)
+except Exception as e:
+    print(f"Błąd podczas uruchamiania bota: {e}")
